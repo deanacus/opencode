@@ -16,26 +16,98 @@ This repository contains personal configuration for OpenCode. It is NOT a softwa
 
 ### Agent Definitions (`agents/*.md`)
 
-Frontmatter fields:
-- `description` (required): When to use this agent
-- `mode`: `subagent` (limited autonomy) or `all` (full tools)
-- `temperature`: 0.1-0.3 for deterministic tasks
-- `tools`: Enable/disable specific tools (bash, read, edit, write, grep, glob, etc.)
+#### Frontmatter Fields
+
+| Field         | Type    | Required | Description                                              |
+| ------------- | ------- | -------- | -------------------------------------------------------- |
+| `description` | string  | Yes      | When to use this agent (shown in @ autocomplete)         |
+| `mode`        | string  | No       | `primary`, `subagent`, or `all` (default: `all`)         |
+| `model`       | string  | No       | Override model (format: `provider/model-id`)             |
+| `temperature` | number  | No       | 0.0-1.0, controls randomness (default: model-specific)   |
+| `tools`       | object  | No       | Enable/disable specific tools (see Available Tools)      |
+| `disable`     | boolean | No       | Set to `true` to disable the agent                       |
+| `hidden`      | boolean | No       | Hide subagent from @ autocomplete (subagents only)       |
+
+#### Agent Modes
+
+| Mode       | Description                                            |
+| ---------- | ------------------------------------------------------ |
+| `primary`  | Main agents you interact with directly (Tab to cycle)  |
+| `subagent` | Specialized agents invoked via @ mention or Task tool  |
+| `all`      | Default if not specified; has full capabilities        |
+
+#### Temperature Guidelines
+
+| Range   | Use Case                                                   |
+| ------- | ---------------------------------------------------------- |
+| 0.0-0.2 | Very focused and deterministic; code analysis, planning    |
+| 0.3-0.5 | Balanced with some creativity; general development         |
+| 0.6-1.0 | More creative and varied; brainstorming                    |
+
+#### Tool Configuration
+
+Tools are enabled/disabled with boolean values. Wildcards supported for MCP servers:
+
+```yaml
+tools:
+  write: false
+  edit: false
+  bash: false
+  mymcp_*: false  # Disable all tools from an MCP server
+```
 
 ### Command Definitions (`commands/*.md`)
 
-Frontmatter fields:
-- `description` (required): What the command does
+#### Frontmatter Fields
 
-Body contains instructions and `$ARGUMENTS` placeholder for user input.
+| Field         | Type    | Required | Description                                      |
+| ------------- | ------- | -------- | ------------------------------------------------ |
+| `description` | string  | Yes      | Brief description shown in command autocomplete  |
+| `agent`       | string  | No       | Which agent executes the command                 |
+| `model`       | string  | No       | Override the default model                       |
+
+The markdown file name becomes the command name (e.g., `my-command.md` → `/my-command`).
+
+#### Prompt Placeholders
+
+| Placeholder      | Description                              |
+| ---------------- | ---------------------------------------- |
+| `$ARGUMENTS`     | All arguments passed to the command      |
+| `$1`, `$2`, ...  | Positional arguments                     |
+| `` !`command` `` | Shell command output injection           |
+| `@path/to/file`  | File content inclusion                   |
+
+#### Example Command
+
+```markdown
+---
+description: Review recent changes
+---
+Recent git commits:
+!`git log --oneline -10`
+
+Review these changes for $1 (or general quality if not specified).
+```
 
 ### Skill Definitions (`skills/*/SKILL.md`)
 
-Frontmatter fields:
-- `name` (required): Skill identifier
-- `description` (required): When to load this skill
+#### Frontmatter Fields
 
-Body contains detailed instructions that get injected into context.
+| Field           | Type   | Required | Description                                         |
+| --------------- | ------ | -------- | --------------------------------------------------- |
+| `name`          | string | Yes      | Skill identifier (must match directory name)        |
+| `description`   | string | Yes      | 1-1024 characters; helps agent decide when to load  |
+| `metadata`      | object | No       | String-to-string map for additional info            |
+
+#### Name Validation Rules
+
+- 1-64 characters
+- Lowercase alphanumeric with single hyphen separators
+- Cannot start or end with `-`
+- Cannot contain consecutive `--`
+- Must match the directory name
+
+Body contains detailed instructions that get injected into context when the skill is loaded.
 
 ---
 
@@ -80,12 +152,12 @@ When writing agent instructions:
 
 ### Naming Conventions
 
-| Item | Convention | Example |
-|------|------------|---------|
-| Agent files | lowercase, hyphenated | `codebase-explorer.md` |
-| Command files | lowercase, hyphenated | `gather-context.md` |
-| Skill directories | lowercase, hyphenated | `code-review/` |
-| Skill files | `SKILL.md` (uppercase) | `skills/code-review/SKILL.md` |
+| Item              | Convention             | Example                       |
+| ----------------- | ---------------------- | ----------------------------- |
+| Agent files       | lowercase, hyphenated  | `codebase-explorer.md`        |
+| Command files     | lowercase, hyphenated  | `gather-context.md`           |
+| Skill directories | lowercase, hyphenated  | `code-review/`                |
+| Skill files       | `SKILL.md` (uppercase) | `skills/code-review/SKILL.md` |
 
 ---
 
@@ -95,12 +167,12 @@ When reviewing changes to this repository, apply the code-review skill methodolo
 
 ### Severity Levels
 
-| Severity | Criteria |
-|----------|----------|
+| Severity | Criteria                                                   |
+| -------- | ---------------------------------------------------------- |
 | Critical | Instructions that could cause data loss or security issues |
-| Major | Incorrect tool configurations, broken workflows |
-| Minor | Unclear instructions, missing edge cases |
-| Nitpick | Style preferences, formatting |
+| Major    | Incorrect tool configurations, broken workflows            |
+| Minor    | Unclear instructions, missing edge cases                   |
+| Nitpick  | Style preferences, formatting                              |
 
 ### Review Checklist
 
@@ -127,16 +199,16 @@ Write in imperative mood, focusing on **why** not **what**. Keep the first line 
 
 ### Commit Types
 
-| Type | Purpose | In Changelog |
-|------|---------|--------------|
-| `feat:` | New user-facing feature | Yes |
-| `fix:` | Bug fix (user-facing) | Yes |
-| `perf:` | Performance improvement | Yes |
-| `refactor:` | Code restructuring without behavior change | Yes |
-| `test:` | Adding or updating tests | Yes |
-| `docs:` | Documentation only | No |
-| `chore:` | Maintenance, tooling, dependencies | No |
-| `ci:` | CI/CD changes | No |
+| Type        | Purpose                                    | In Changelog |
+| ----------- | ------------------------------------------ | ------------ |
+| `feat:`     | New user-facing feature                    | Yes          |
+| `fix:`      | Bug fix (user-facing)                      | Yes          |
+| `perf:`     | Performance improvement                    | Yes          |
+| `refactor:` | Code restructuring without behavior change | Yes          |
+| `test:`     | Adding or updating tests                   | Yes          |
+| `docs:`     | Documentation only                         | No           |
+| `chore:`    | Maintenance, tooling, dependencies         | No           |
+| `ci:`       | CI/CD changes                              | No           |
 
 ### Commit Process
 
@@ -155,35 +227,61 @@ Write in imperative mood, focusing on **why** not **what**. Keep the first line 
 
 ---
 
+## Available Tools
+
+Built-in tools that can be enabled/disabled in agent definitions:
+
+| Tool        | Description                                       |
+| ----------- | ------------------------------------------------- |
+| `bash`      | Execute shell commands                            |
+| `read`      | Read file contents                                |
+| `edit`      | Modify existing files using string replacement    |
+| `write`     | Create new files or overwrite existing ones       |
+| `patch`     | Apply patches to files                            |
+| `grep`      | Search file contents using regex                  |
+| `glob`      | Find files by pattern matching                    |
+| `list`      | List files and directories                        |
+| `skill`     | Load a SKILL.md file                              |
+| `task`      | Spawn subagents                                   |
+| `todowrite` | Manage todo lists (disabled for subagents)        |
+| `todoread`  | Read existing todo lists (disabled for subagents) |
+| `webfetch`  | Fetch web content                                 |
+| `websearch` | Search the web (requires OpenCode provider)       |
+| `question`  | Ask the user questions during execution           |
+
+---
+
 ## Available Components
 
 ### Agents
 
-| Agent | Purpose | Mode |
-|-------|---------|------|
-| `codebase-explorer` | Find files, analyze implementations | subagent |
-| `pr-feedback` | Address GitHub PR review feedback | all |
-| `prompt-generator` | Convert plans to implementation prompts | all |
-| `researcher` | Fetch and analyze web content | subagent |
-| `reviewer` | Code review with 4-layer methodology | subagent |
-| `tester` | Write comprehensive test suites | subagent |
+| Agent               | Purpose                                 | Mode     |
+| ------------------- | --------------------------------------- | -------- |
+| `codebase-explorer` | Find files, analyze implementations     | subagent |
+| `pr-feedback`       | Address GitHub PR review feedback       | all      |
+| `prompt-generator`  | Convert plans to implementation prompts | all      |
+| `researcher`        | Fetch and analyze web content           | subagent |
+| `reviewer`          | Code review with 4-layer methodology    | subagent |
+| `tester`            | Write comprehensive test suites         | subagent |
 
 ### Commands
 
-| Command | Purpose |
-|---------|---------|
-| `/commit` | Create atomic git commits with conventional messages |
-| `/gather-context` | Understand repository state and recent changes |
-| `/research` | Research using codebase analysis and external docs |
-| `/review` | Run code review on files or changes |
+| Command           | Purpose                                              |
+| ----------------- | ---------------------------------------------------- |
+| `/commit`         | Create atomic git commits with conventional messages |
+| `/gather-context` | Understand repository state and recent changes       |
+| `/research`       | Research using codebase analysis and external docs   |
+| `/review`         | Run code review on files or changes                  |
+| `/test`           | Write tests using TDD or verification mode           |
 
 ### Skills
 
-| Skill | Purpose |
-|-------|---------|
-| `code-review` | 4-layer review methodology (Correctness, Security, Performance, Style) |
-| `frontend-design` | Create distinctive, production-grade frontend interfaces |
-| `jira-ticket-context` | Load Jira ticket context from git branch |
+| Skill                 | Purpose                                                                 |
+| --------------------- | ----------------------------------------------------------------------- |
+| `code-review`         | 4-layer review methodology (Correctness, Security, Performance, Style)  |
+| `frontend-design`     | Create distinctive, production-grade frontend interfaces                |
+| `jira-ticket-context` | Load Jira ticket context from git branch                                |
+| `testing`             | Testing methodology with coverage priorities and test design principles |
 
 ---
 
@@ -191,13 +289,13 @@ Write in imperative mood, focusing on **why** not **what**. Keep the first line 
 
 Current active servers in `opencode.json`:
 
-| Server | Type | Purpose |
-|--------|------|---------|
-| `chrome-devtools` | local | Browser automation and debugging |
-| `context7` | remote | Documentation lookup |
-| `fetch` | local (Docker) | Web content fetching |
-| `sequential-thinking` | local | Step-by-step reasoning |
-| `mongo` | local | MongoDB operations (read-only) |
+| Server                | Type           | Purpose                          |
+| --------------------- | -------------- | -------------------------------- |
+| `chrome-devtools`     | local          | Browser automation and debugging |
+| `context7`            | remote         | Documentation lookup             |
+| `fetch`               | local (Docker) | Web content fetching             |
+| `sequential-thinking` | local          | Step-by-step reasoning           |
+| `mongo`               | local          | MongoDB operations (read-only)   |
 
 Disabled servers: `github`, `playwright`
 
