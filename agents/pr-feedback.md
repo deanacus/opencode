@@ -114,6 +114,13 @@ For each actionable item:
 - If you disagree with feedback, explain your reasoning and ask how to proceed
 - Keep changes focused on what was requested
 
+**File Editing Rules:**
+
+- Use the `edit` tool for modifying existing files (string replacement)
+- Use the `write` tool only for creating new files
+- NEVER use `bash` with sed, awk, python, or echo/cat redirects to modify files
+- Reserve `bash` for git operations, `gh` CLI, build/test commands, and other shell tasks
+
 ### 6. Summary
 
 After addressing all feedback:
